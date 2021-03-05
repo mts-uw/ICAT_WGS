@@ -5,11 +5,11 @@ from xgboost import XGBRegressor
 from sklearn.metrics import mean_squared_error, r2_score
 from sklearn.model_selection import GridSearchCV, KFold
 import script.views as views
+from skopt.learning import ExtraTreesRegressor as opt_ETR
 import pickle
 
 
 def model_cal(data, cols, model='ETR', data_types=['conv', 'prop1', 'prop2'], shap=True):
-    cvf = KFold(n_splits=10, shuffle=True, random_state=1126)
     for type_ in data_types:
         os.makedirs('{type_}', exit_ok=True)
         print(type_)
@@ -21,24 +21,26 @@ def model_cal(data, cols, model='ETR', data_types=['conv', 'prop1', 'prop2'], sh
         if shap:
             shap.initjs()
             shap_importance(model, feat, target, save=f'{type_}/{model}')
-        pickle.dump(model, save=f'{type_}/{model}.binaryfile'))
+        pickle.dump(model, save=f'{type_}/{model}.binaryfile')
 
 
-def grid_search(feat, target, cvf, model = 'ETR'):
+def grid_search(feat, target, cvf, model='ETR'):
+    cvf = KFold(n_splits=10, shuffle=True, random_state=1126)
     if 'ETR' in model:
-        cvmodel=GridSearchCV(ExtraTreesRegressor(n_jobs=1, random_state=1126),
-                               param_grid = {"n_estimators": [250, 500, 1000]},
-                               n_jobs = 5)
+        cvmodel = GridSearchCV(ExtraTreesRegressor(n_jobs=1, random_state=1126),
+                               param_grid={"n_estimators": [250, 500, 1000]},
+                               n_jobs=5)
         crossvalid(feat, target, cvmodel, cvf)
-        model=ExtraTreesRegressor(n_estimators = cvmodel.best_params_['n_estimtors'],
-                                    n_jobs = -1, random_state = 1126)
+
+        model = opt_ETR(n_estimators=cvmodel.best_params_['n_estimtors'],
+                        n_jobs=-1, random_state=1126)
 
     if 'XGB' in model:
-        cvmodel=GridSearchCV(ExtraTreesRegressor(n_jobs=1, random_state=1126),
-                               param_grid = {"n_estimators": [250, 500, 1000]},
-                               n_jobs = 5)
+        cvmodel = GridSearchCV(ExtraTreesRegressor(n_jobs=1, random_state=1126),
+                               param_grid={"n_estimators": [250, 500, 1000]},
+                               n_jobs=5)
         crossvalid(feat, target, cvmodel, cvf)
-        model=XGBRegressor(n_estimators = cvmodel.best_params_['n_estimtors'],
+        model = XGBRegressor(n_estimators=cvmodel.best_params_['n_estimtors'],
                              n_jobs=-1, random_state=1126)
 
     return model

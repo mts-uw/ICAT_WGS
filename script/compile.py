@@ -6,6 +6,17 @@ USAGE_DESC = ['AN',  'AW', 'atomic radius', 'electronegativity',
               'ionization enegy', 'Surface energy']
 
 
+def read_desc():
+    desc = pd.read_csv('data/Descriptors_WGS.csv',
+                       skiprows=[0], index_col="symbol")
+    desc = desc.loc[:, ['AN',  'AW', 'atomic radius', 'electronegativity',
+                        'm. p.', 'b. p.', 'delta_fus H ', 'density',
+                        'ionization enegy ', 'Surface energy ']]
+    desc.columns = USAGE_DESC
+    desc = desc.fillna(desc.mean())
+    return desc
+
+
 def data_convert():
     data = pd.read_excel(
         'data/WGS.xlsx', skiprows=8).drop(['Total # of Data', 'Reference', 'Data'], axis=1)
@@ -16,13 +27,7 @@ def data_convert():
     data.index = np.arange(len(data))
     print('# of Data after preprocessing:', len(data))
 
-    desc = pd.read_csv('data/Descriptors_WGS.csv',
-                       skiprows=[0], index_col="symbol")
-    desc = desc.loc[:, ['AN',  'AW', 'atomic radius', 'electronegativity',
-                        'm. p.', 'b. p.', 'delta_fus H ', 'density',
-                        'ionization enegy ', 'Surface energy ']]
-    desc.columns = USAGE_DESC
-    desc = desc.fillna(desc.mean())
+    desc = read_desc()
 
     support = pd.read_excel('data/support.xlsx')
     element = list(desc.index)
@@ -48,7 +53,7 @@ def data_convert():
 
     data = pd.concat([data, swed], axis=1)
     data.to_csv('data/wgs.csv', index=None)
-    return data
+    return data, desc
 
 
 def data_loader(convert=False, desc_names=USAGE_DESC):
@@ -59,13 +64,14 @@ def data_loader(convert=False, desc_names=USAGE_DESC):
             return None
 
     if convert:
-        data = data_convert()
+        data, desc = data_convert()
     else:
         data = pd.read_csv('data/wgs.csv')
+        desc = read_desc()
 
     cols = get_columns(data, desc_names)
 
-    return data, cols
+    return data, desc, cols
 
 
 def comp_times_base(comp, base, sort=False, times=True, attention=False):
@@ -114,6 +120,7 @@ def get_columns(data, use_cols):
     cols['element'] = element
     cols['preparation'] = preparation
     cols['condition'] = condition
+    cols['use_cols'] = use_cols
     cols['swed'] = swed_names
     cols['conv'] = element + preparation + condition
     cols['prop1'] = element + preparation + condition + swed_names
