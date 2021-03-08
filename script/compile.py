@@ -56,7 +56,7 @@ def data_convert():
     return data, desc
 
 
-def data_loader(convert=False, desc_names=USAGE_DESC):
+def data_loader(convert=False, desc_names=USAGE_DESC, temp=None):
     for s in desc_names:
         if s not in USAGE_DESC:
             print(f'{s} is not avaiable!!')
@@ -68,6 +68,11 @@ def data_loader(convert=False, desc_names=USAGE_DESC):
     else:
         data = pd.read_csv('data/wgs.csv')
         desc = read_desc()
+
+    if temp is not None:
+        idx = data.loc[:, 'Reaction Temperture (℃)'] <= temp
+        data = data[idx]
+        data.index = np.arange(len(data))
 
     cols = get_columns(data, desc_names)
 

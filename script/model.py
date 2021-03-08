@@ -7,6 +7,7 @@ from sklearn.model_selection import GridSearchCV, KFold
 import script.views as views
 from skopt.learning import ExtraTreesRegressor as opt_ETR
 import pickle
+import os
 
 
 def model_cal(data, cols, model='ETR', data_types=['conv', 'prop1', 'prop2'], shap=True):
@@ -14,7 +15,7 @@ def model_cal(data, cols, model='ETR', data_types=['conv', 'prop1', 'prop2'], sh
         os.makedirs('{type_}', exit_ok=True)
         print(type_)
         feat, target = data.loc[:, cols[type_]], data.loc[:, cols['target']]
-        model = grid_search(feat, target, cvf, model)
+        model = grid_search(feat, target, model)
         views.one_shot_plot(feat, target, model, xylim=[0, 35],
                             random_state=1126, save=f'{type_}/{model}')
         views.plot_importance(model, feat.columns, 20, save=f'{type_}/{model}')
@@ -24,18 +25,18 @@ def model_cal(data, cols, model='ETR', data_types=['conv', 'prop1', 'prop2'], sh
         pickle.dump(model, save=f'{type_}/{model}.binaryfile')
 
 
-def grid_search(feat, target, cvf, model='ETR'):
+def grid_search(feat, target, model='ETR'):
     cvf = KFold(n_splits=10, shuffle=True, random_state=1126)
-    if 'ETR' in model:
+    if 'ETR' == model:
         cvmodel = GridSearchCV(ExtraTreesRegressor(n_jobs=1, random_state=1126),
                                param_grid={"n_estimators": [250, 500, 1000]},
                                n_jobs=5)
         crossvalid(feat, target, cvmodel, cvf)
 
-        model = opt_ETR(n_estimators=cvmodel.best_params_['n_estimtors'],
+        model = opt_ETR(n_estimators=cvmodel.best_params_['n_estimators'],
                         n_jobs=-1, random_state=1126)
 
-    if 'XGB' in model:
+    if 'XGB' == model:
         cvmodel = GridSearchCV(ExtraTreesRegressor(n_jobs=1, random_state=1126),
                                param_grid={"n_estimators": [250, 500, 1000]},
                                n_jobs=5)
